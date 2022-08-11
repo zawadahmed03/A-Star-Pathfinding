@@ -6,12 +6,19 @@ function removeFromArray(arr, elt) {
   }
 }
 
-const cols = 10;
-const rows = 10;
+function heuristic(a, b) {
+  let d = abs(a.i - b.i) + abs(a.j - b.j)
+  return d;
+}
+
+const cols = 50;
+const rows = 50;
 const grid = new Array(cols);
 
 let openSet = [];
 let closedSet = [];
+
+let path = [];
 
 let start;
 let end;
@@ -25,6 +32,7 @@ function Spot(i, j) {
   this.g = 0;
   this.h = 0;
   this.neighbors = [];
+  this.previous = undefined;
 
   this.show = function (color) {
     fill(color);
@@ -41,11 +49,11 @@ function Spot(i, j) {
     if (i > 0) {
       this.neighbors.push(grid[i - 1][j]);
     }
-    if (j < rows - 1) {
-      this.neighbors.push(grid[i][j + 1]);
-    }
     if (j > 0) {
       this.neighbors.push(grid[i][j - 1]);
+    }
+    if (j < rows - 1) {
+      this.neighbors.push(grid[i][j + 1]);
     }
   };
 }
@@ -73,61 +81,78 @@ function setup() {
   }
 
   start = grid[0][0];
-  end = grid[cols - 1][rows - 1];
+  end = grid[cols-1][0];
 
   openSet.push(start);
 }
 
 function draw() {
+  end.show(0);
+
+  let current;
+
   if (openSet.length > 0) {
     let winner = 0;
     for (let i = 0; i < openSet.length; i++) {
       if (openSet[i].f < openSet[winner.f]) {
-        winner[i];
+        winner = i;
       }
     }
-    let current = openSet[winner];
 
-    if (openSet === end) {
-      console.log("done");
+    current = openSet[winner];
+
+    if (current === end) {
+      noLoop();
     }
 
     removeFromArray(openSet, current);
     closedSet.push(current);
 
-    let neighbors = current.neighbors
+    let neighbors = current.neighbors;
     for (let i = 0; i < neighbors.length; i++) {
-      let neighbor = neighbors[i]
+      let neighbor = neighbors[i];
 
-      if(!closedSet.includes(neighbor)) {
-        let tempG = current.g + 1
+      if (!closedSet.includes(neighbor)) {
+        let tempG = current.g + 1;
 
         if (openSet.includes(neighbor)) {
           if (tempG < neighbor.g) {
-            neighbor.g = tempG
+            neighbor.g = tempG;
           }
+        } else {
+          neighbor.g = tempG;
+          openSet.push(neighbor);
         }
-        else {
-          neighbor.g = tempG
-          openSet.push(neighbor)
-        }
+
+        neighbor.h = heuristic(neighbor, end);
+        neighbor.f = neighbor.h + neighbor.g;
+        neighbor.previous = current;
       }
     }
-  } else {
-    console.log("done");
   }
-
   for (let i = 0; i < cols; i++) {
     for (let j = 0; j < rows; j++) {
-      grid[i][j].show(230);
+      if (grid[i][j] != end) grid[i][j].show(230);
     }
   }
 
   for (let i = 0; i < openSet.length; i++) {
-    openSet[i].show(color(230, 0, 0));
+    openSet[i].show(color(0, 230, 0));
   }
 
-  for (let i = 0; i < openSet.length; i++) {
-    closedSet[i].show(color(0, 230, 0));
+  for (let i = 0; i < closedSet.length; i++) {
+    closedSet[i].show(color(230, 0, 0));
+  }
+
+  let temp = current;
+  path = [];
+  path.push(temp);
+  while (temp.previous) {
+    path.push(temp.previous);
+    temp = temp.previous;
+  }
+
+  for (let i = 0; i < path.length; i++) {
+    path[i].show(color(0, 0, 230));
   }
 }
